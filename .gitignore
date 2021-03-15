@@ -1,3 +1,6 @@
+# Compiled yara rules
+*.yarac
+
 # Pycharm stuff
 .idea/
 

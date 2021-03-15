@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import argparse
 import hashlib
 import os
@@ -17,17 +18,44 @@ from os.path import isdir, isfile, join, basename, abspath, dirname, realpath
 from pathlib import Path
 from collections import Counter, OrderedDict
 from typing import Optional, Dict, List
-
+from tqdm import tqdm
 
 sha256_regex = re.compile(r"^[a-f0-9]{64}$", re.IGNORECASE)
 yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
+yarac_signatures_dir = join(join(dirname(realpath(__file__)), 'yarac_signatures'))
 
 
-def is_pe(file_path: str) -> bool:
+def compile_signatures():
+    for root, dirs, files in os.walk(yara_signatures_dir, topdown=False):
+        for dir in dirs:
+            dir_path = join(root, dir)
+            namespace_to_signatures = dict()
+            rule_found = False
+            for f in os.listdir(dir_path):
+                if f.endswith('.yara'):
+                    rule_found = True
+                    # -6 's.yara'
+                    namespace_to_signatures[f[:-6]] = join(dir_path, f)
+            if rule_found:
+                p = Path(dir_path)
+                arch = p.name
+                fformat = p.parent.name
+                dst_file = join(yarac_signatures_dir, f'{fformat}_{arch}.yarac')
+                yara.compile(filepaths=namespace_to_signatures).save(dst_file)
+
+
+def is_supported_file(file_path: str) -> bool:
     try:
-        return open(file_path, 'rb').read(2) == b'MZ'
+        with open(file_path, 'rb') as fp:
+            first_two_bytes = fp.read(2)
+            if first_two_bytes == b'MZ':
+                return True
+            if first_two_bytes == b'\x7fE' and fp.read(2) == b'LF':
+                return True
+            # TODO mach-o
     except Exception:
-        return False
+        pass
+    return False
 
 
 def get_file_sha256sum(file_path: str) -> str:
@@ -44,32 +72,27 @@ def diec(file_path: str) -> Optional[Dict]:
         return json.loads(
             subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
     except (subprocess.CalledProcessError, ValueError) as e:
-        logger.error(f"Exception: {e.output.decode(errors='replace') if e.output else e}")
-    return None
+        sys.exit(f"Exception: {e.output.decode(errors='replace') if e.output else e}")
 
 
 def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, str]]]:
-    yara_sigs = join(yara_signatures_dir, fformat, arch)
-    rules = yara.compile(filepaths={
-        'compiler': join(yara_sigs, 'compilers.yara'),
-        #'installers': join(yara_sigs, 'installers.yara'),
-        'packer': join(yara_sigs, 'packers.yara'),
-    })
+    rules = yara.load(join(yarac_signatures_dir, f'{fformat}_{arch}.yarac'))
     match = rules.match(file_path)
-    if match is None:
+    if len(match) == 0:
         return None
     out = list()
     for m in match:
         entry = dict()
         entry['type'] = m.namespace
         entry['rule'] = m.rule
-        entry['name'] = m.meta['name']
-        entry['version'] = m.meta['version']
+        entry['meta'] = m.meta
         out.append(entry)
     return out
 
 
-def aggregator(file_path: str) -> Dict:
+def aggregator(file_path: str) -> Optional[Dict]:
+    if not is_supported_file(file_path):
+        return None
     out = dict()
     bname = basename(file_path)
     if sha256_regex.match(bname):
@@ -99,7 +122,32 @@ def aggregator(file_path: str) -> Dict:
     return out
 
 
+def listdir_file_abspath(folder: str) -> List:
+    assert isdir(folder)
+    return [abspath(join(folder, f)) for f in os.listdir(folder)
+            if not isdir(abspath(join(folder, f)))]
+
+
+def run_parallel(tgt_folder: str) -> List[Dict]:
+    print('Scan started...')
+    files = listdir_file_abspath(tgt_folder)
+    with Pool() as pool:
+        outputs = list(tqdm(pool.imap(aggregator, files), total=len(files)))
+        print('scan done!')
+        return list(filter(None, outputs))
+
+
 if __name__ == "__main__":
     assert isdir(yara_signatures_dir)
-    r = aggregator('/home/simo/test/a.out')
-    print(r)
+    assert isdir(yarac_signatures_dir)
+    if len(sys.argv) != 2:
+        sys.exit('Missing target directory')
+    tgt_dir = sys.argv[1]
+    assert isdir(tgt_dir)
+
+    if len(os.listdir(yarac_signatures_dir)) <= 1:
+        compile_signatures()
+        print(f'{len(os.listdir(yarac_signatures_dir)) - 1} rules compiled')
+
+    results = run_parallel(tgt_dir)
+    print(len(results))

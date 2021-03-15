@@ -1,3 +1,6 @@
+# Json outputs
+*.json
+
 # Compiled yara rules
 *.yarac
 

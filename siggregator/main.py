@@ -20,6 +20,7 @@ from collections import Counter, OrderedDict
 from typing import Optional, Dict, List
 from tqdm import tqdm
 
+
 sha256_regex = re.compile(r"^[a-f0-9]{64}$", re.IGNORECASE)
 yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
 yarac_signatures_dir = join(join(dirname(realpath(__file__)), 'yarac_signatures'))
@@ -69,8 +70,22 @@ def get_file_sha256sum(file_path: str) -> str:
 def diec(file_path: str) -> Optional[Dict]:
     cmd = ['/home/simo/die_lin64_portable/diec.sh', '--json', file_path]
     try:
-        return json.loads(
+        out = json.loads(
             subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
+        detects = out['detects']
+        if len(detects) == 0:
+            out['detects'] = None
+        else:
+            new_detects = dict()
+            for d in detects:
+                del d['string']
+                for k, v in d.items():
+                    if v == "-":
+                        new_detects[k] = None
+                    else:
+                        new_detects[k] = v
+            out['detects'] = new_detects
+        return out
     except (subprocess.CalledProcessError, ValueError) as e:
         sys.exit(f"Exception: {e.output.decode(errors='replace') if e.output else e}")
 
@@ -85,7 +100,10 @@ def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, st
         entry = dict()
         entry['type'] = m.namespace
         entry['rule'] = m.rule
-        entry['meta'] = m.meta
+        m.meta.pop('pattern', None)
+        m.meta.pop('source', None)
+        for k, v in m.meta.items():
+            entry[k] = v
         out.append(entry)
     return out
 
@@ -151,3 +169,6 @@ if __name__ == "__main__":
 
     results = run_parallel(tgt_dir)
     print(len(results))
+
+    with open('../dst.json', 'w') as fp:
+        json.dump(results, fp)

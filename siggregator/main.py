@@ -68,7 +68,7 @@ def get_file_sha256sum(file_path: str) -> str:
 
 
 def diec(file_path: str) -> Optional[Dict]:
-    cmd = ['/home/simo/die_lin64_portable/diec.sh', '--json', file_path]
+    cmd = ['/die_lin64_portable/diec.sh', '--json', file_path]
     try:
         out = json.loads(
             subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
@@ -158,17 +158,20 @@ def run_parallel(tgt_folder: str) -> List[Dict]:
 if __name__ == "__main__":
     assert isdir(yara_signatures_dir)
     assert isdir(yarac_signatures_dir)
-    if len(sys.argv) != 2:
-        sys.exit('Missing target directory')
-    tgt_dir = sys.argv[1]
-    assert isdir(tgt_dir)
 
     if len(os.listdir(yarac_signatures_dir)) <= 1:
         compile_signatures()
         print(f'{len(os.listdir(yarac_signatures_dir)) - 1} rules compiled')
+
+    if len(sys.argv) != 2:
+        sys.exit('Missing target directory')
+    tgt_dir = sys.argv[1]
+    assert isdir(tgt_dir)
 
     results = run_parallel(tgt_dir)
     print(len(results))
 
     with open('../dst.json', 'w') as fp:
         json.dump(results, fp)
+
+    print(results)

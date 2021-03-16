@@ -33,3 +33,128 @@ docker build . -t packmad:siggregator
 * `OUT_FILE` - will be a json file containing the output of those tools
 
 
+### How it works in a nutshell
+
+In order to minimize false positives, 
+and given the fact that Retdec's signatures are organized into fileformat/architecture:
+
+1. Fast check by inspecting the first bytes of the files (MZ, .ELF, ...), non-executable files are not analysed
+2. Precise file type and architecture identification from libmagic
+3. Scan with the proper Yara rules for such file type/architecture
+4. DIE scan
+5. Output pre-processing
+
+
+### Example with two files
+
+1. [37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7](https://www.virustotal.com/gui/file/37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7/detection)
+2. [d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f](https://www.virustotal.com/gui/file/d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f/detection)
+
+```
+./siggregator.sh /tmp/twoviruses /tmp/out.json
+> Scanning input directory...
+> Found 2 files. Analysis in progress...
+100%|██████████| 2/2 [00:01<00:00, 32.76it/s]
+> Analysis done!
+> Found 2 executable files. Writing output file...
+> "out.json" written. Bye!
+```
+```
+cat /tmp/out.json | jq
+[
+   {
+      "sha256":"37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7",
+      "magic":"PE32 executable (GUI) Intel 80386, for MS Windows",
+      "format":"pe",
+      "arch":"x86",
+      "die":{
+         "arch":"I386",
+         "detects":[
+            {
+               "name":"VMProtect",
+               "options":null,
+               "type":"protector",
+               "version":null
+            },
+            {
+               "name":"Microsoft Visual C/C++",
+               "options":null,
+               "type":"compiler",
+               "version":"2017 v.15.6"
+            },
+            {
+               "name":"Microsoft Linker",
+               "options":"GUI32",
+               "type":"linker",
+               "version":"14.13, Visual Studio 2017 15.6*"
+            }
+         ],
+         "endianess":"LE",
+         "filetype":"PE32",
+         "mode":"32",
+         "type":"GUI"
+      },
+      "yara":[
+         {
+            "type":"packer",
+            "rule":"vmprotect_2x_xx",
+            "name":"VMProtect",
+            "version":"2.04+"
+         }
+      ]
+   },
+   {
+      "sha256":"d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f",
+      "magic":"PE32 executable (GUI) Intel 80386, for MS Windows",
+      "format":"pe",
+      "arch":"x86",
+      "die":{
+         "arch":"I386",
+         "detects":[
+            {
+               "name":"WinRAR",
+               "options":null,
+               "type":"sfx",
+               "version":null
+            },
+            {
+               "name":"Microsoft Visual C/C++",
+               "options":null,
+               "type":"compiler",
+               "version":"2015 v.14.0"
+            },
+            {
+               "name":"Microsoft Linker",
+               "options":"GUI32,admin",
+               "type":"linker",
+               "version":"14.0, Visual Studio 2015 14.0*"
+            },
+            {
+               "name":"RAR archive",
+               "options":null,
+               "type":"overlay",
+               "version":null
+            },
+            {
+               "name":"RAR",
+               "options":"57.2%,2 files",
+               "type":"archive",
+               "version":"4"
+            }
+         ],
+         "endianess":"LE",
+         "filetype":"PE32",
+         "mode":"32",
+         "type":"GUI"
+      },
+      "yara":[
+         {
+            "type":"installer",
+            "rule":"winrar_sfx_540",
+            "name":"WinRAR SFX",
+            "version":"5.40"
+         }
+      ]
+   }
+]
+```

@@ -1,24 +1,19 @@
 #!/usr/bin/python3
 
-import argparse
 import hashlib
-import os
-import magic
-import yara
-import shutil
-import sys
 import json
-import uuid
+import magic
+import os
 import re
 import subprocess
+import sys
+import yara
 
-from multiprocessing import Pool, freeze_support
-from itertools import repeat
+from multiprocessing import Pool
 from os.path import isdir, isfile, join, basename, abspath, dirname, realpath
 from pathlib import Path
-from collections import Counter, OrderedDict
-from typing import Optional, Dict, List
 from tqdm import tqdm
+from typing import Optional, Dict, List
 
 
 sha256_regex = re.compile(r"^[a-f0-9]{64}$", re.IGNORECASE)
@@ -72,18 +67,19 @@ def diec(file_path: str) -> Optional[Dict]:
     try:
         out = json.loads(
             subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
-        detects = out['detects']
-        if len(detects) == 0:
+        if len(out['detects']) == 0:
             out['detects'] = None
         else:
-            new_detects = dict()
-            for d in detects:
+            new_detects = list()
+            for d in out['detects']:
                 del d['string']
+                new_d = dict()
                 for k, v in d.items():
                     if v == "-":
-                        new_detects[k] = None
+                        new_d[k] = None
                     else:
-                        new_detects[k] = v
+                        new_d[k] = v
+                new_detects.append(new_d)
             out['detects'] = new_detects
         return out
     except (subprocess.CalledProcessError, ValueError) as e:
@@ -101,6 +97,7 @@ def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, st
         entry['type'] = m.namespace
         entry['rule'] = m.rule
         m.meta.pop('pattern', None)
+        m.meta.pop('tool', None)
         m.meta.pop('source', None)
         for k, v in m.meta.items():
             entry[k] = v

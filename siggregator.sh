@@ -1,12 +1,14 @@
 #!/bin/bash
 
 DOCKER_TAG="packmad:siggregator"  # docker build . -t packmad:siggregator
-TARGET="${@: -1}"  # last argument is target file
-INPUT_DIR=$(cd $(dirname "$TARGET") && pwd -P)
-INPUT_FILE=$(basename $TARGET)
 
-if [ "$#" -eq 1 ]; then
-  docker run --rm --volume "$INPUT_DIR":/input:ro -i $DOCKER_TAG "/input/$INPUT_FILE";
+if [ "$#" -eq 2 ] && [[ -d $1 ]]; then
+
+  TARGET="$2"  # second argument is OUT_FILE
+  OUT_DIR=$(cd $(dirname "$TARGET") && pwd -P)
+  OUT_FILE_NAME=$(basename $TARGET)
+
+  docker run --rm --volume "$1":/input:ro --volume "$OUT_DIR":/output -i $DOCKER_TAG "/input/" "/output/$OUT_FILE_NAME";
 else
-  echo "Missing argument!"
+  echo "Usage: siggregator.sh IN_DIR OUT_FILE"
 fi

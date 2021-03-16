@@ -147,11 +147,12 @@ def listdir_file_abspath(folder: str) -> List:
 
 
 def run_parallel(tgt_folder: str) -> List[Dict]:
-    print('Scan started...')
+    print('> Scanning input directory...')
     files = listdir_file_abspath(tgt_folder)
+    print(f'> Found {len(files)} files. Analysis in progress...')
     with Pool() as pool:
         outputs = list(tqdm(pool.imap(aggregator, files), total=len(files)))
-        print('scan done!')
+        print('> Analysis done!')
         return list(filter(None, outputs))
 
 
@@ -161,17 +162,19 @@ if __name__ == "__main__":
 
     if len(os.listdir(yarac_signatures_dir)) <= 1:
         compile_signatures()
-        print(f'{len(os.listdir(yarac_signatures_dir)) - 1} rules compiled')
+        print(f'> {len(os.listdir(yarac_signatures_dir)) - 1} rules compiled')
 
-    if len(sys.argv) != 2:
-        sys.exit('Missing target directory')
+    if len(sys.argv) != 3:
+        sys.exit('Usage: siggregator.py IN_DIR OUT_FILE')
     tgt_dir = sys.argv[1]
     assert isdir(tgt_dir)
+    tgt_file = sys.argv[2]
+    if isfile(tgt_file):
+        os.remove(tgt_file)
 
     results = run_parallel(tgt_dir)
-    print(len(results))
+    print(f'> Found {len(results)} executable files. Writing output file...')
 
-    with open('../dst.json', 'w') as fp:
+    with open(tgt_file, 'w') as fp:
         json.dump(results, fp)
-
-    print(results)
+    print(f'> "{basename(tgt_file)}" written. Bye!')

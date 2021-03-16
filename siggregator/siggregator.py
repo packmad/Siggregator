@@ -21,7 +21,7 @@ yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
 yarac_signatures_dir = join(join(dirname(realpath(__file__)), 'yarac_signatures'))
 
 
-def compile_signatures():
+def compile_signatures() -> int:
     for root, dirs, files in os.walk(yara_signatures_dir, topdown=False):
         for dir in dirs:
             dir_path = join(root, dir)
@@ -38,6 +38,7 @@ def compile_signatures():
                 fformat = p.parent.name
                 dst_file = join(yarac_signatures_dir, f'{fformat}_{arch}.yarac')
                 yara.compile(filepaths=namespace_to_signatures).save(dst_file)
+    return len(os.listdir(yarac_signatures_dir)) - 1  # 1 is .gitkeep file
 
 
 def is_supported_file(file_path: str) -> bool:
@@ -45,10 +46,11 @@ def is_supported_file(file_path: str) -> bool:
         with open(file_path, 'rb') as fp:
             first_two_bytes = fp.read(2)
             if first_two_bytes == b'MZ':
-                return True
+                return True  # PE
             if first_two_bytes == b'\x7fE' and fp.read(2) == b'LF':
-                return True
-            # TODO mach-o
+                return True  # ELF
+            if first_two_bytes == b'\xfe\xed' and fp.read(1) == b'\xfa':
+                return True  # Mach-O
     except Exception:
         pass
     return False
@@ -158,8 +160,8 @@ if __name__ == "__main__":
     assert isdir(yarac_signatures_dir)
 
     if len(os.listdir(yarac_signatures_dir)) <= 1:
-        compile_signatures()
-        print(f'> {len(os.listdir(yarac_signatures_dir)) - 1} rules compiled')
+        nof_sigs = compile_signatures()
+        print(f'> {nof_sigs} rules compiled')
 
     if len(sys.argv) != 3:
         sys.exit('Usage: siggregator.py IN_DIR OUT_FILE')

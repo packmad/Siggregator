@@ -126,7 +126,7 @@ def aggregator(file_path: str) -> Optional[Dict]:
             arch = 'x64'
         elif '32-bit' in magic_sig:
             arch = 'x86'
-    if magic_sig.startswith('PE32'):  # 'PE32+' if x64
+    if magic_sig.startswith('PE32'):  # if x64 -> 'PE32+'
         fformat = 'pe'
         if 'x86-64' in magic_sig:
             arch = 'x64'

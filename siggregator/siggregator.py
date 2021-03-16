@@ -111,31 +111,38 @@ def aggregator(file_path: str) -> Optional[Dict]:
     if not is_supported_file(file_path):
         return None
     out = dict()
-    bname = basename(file_path)
-    if sha256_regex.match(bname):
-        out['sha256'] = bname
-    else:
-        out['sha256'] = get_file_sha256sum(file_path)
     magic_sig = magic.from_file(file_path)
     out['magic'] = magic_sig
     fformat = arch = None
-    if magic_sig.startswith('ELF'):
+    if magic_sig.startswith('PE32'):  # if x64 -> 'PE32+'
+        fformat = 'pe'
+        if magic_sig[4] == '+':
+            arch = 'x64'
+        elif '80386' in magic_sig:
+            arch = 'x86'
+    elif magic_sig.startswith('ELF'):
         fformat = 'elf'
         if '64-bit' in magic_sig:
             arch = 'x64'
         elif '32-bit' in magic_sig:
             arch = 'x86'
-    if magic_sig.startswith('PE32'):  # if x64 -> 'PE32+'
-        fformat = 'pe'
-        if 'x86-64' in magic_sig:
+    elif magic_sig.startswith('MachO'):
+        fformat = 'macho'
+        if '64-bit' in magic_sig:
             arch = 'x64'
-        elif '80386' in magic_sig:
+        elif '32-bit' in magic_sig:
             arch = 'x86'
-    if fformat is not None and arch is not None:
-        out['format'] = fformat
-        out['arch'] = arch
-        out['die'] = diec(file_path)
-        out['yara'] = yarac(file_path, fformat, arch)
+    if fformat is None or arch is None:
+        return None
+    out['format'] = fformat
+    out['arch'] = arch
+    out['die'] = diec(file_path)
+    out['yara'] = yarac(file_path, fformat, arch)
+    bname = basename(file_path)
+    if sha256_regex.match(bname):
+        out['sha256'] = bname
+    else:
+        out['sha256'] = get_file_sha256sum(file_path)
     return out
 
 

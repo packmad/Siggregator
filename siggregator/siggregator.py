@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import hashlib
 import json
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         print(f'> {nof_sigs} rules compiled')
 
     if len(sys.argv) != 3:
-        sys.exit('Usage: siggregator.py IN_DIR OUT_FILE')
+        sys.exit(f'Usage: {basename(__file__)} IN_DIR OUT_FILE')
     tgt_dir = sys.argv[1]
     assert isdir(tgt_dir)
     tgt_file = sys.argv[2]

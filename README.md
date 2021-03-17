@@ -45,13 +45,35 @@ and given the fact that Retdec's signatures are organized into fileformat/archit
 5. Output pre-processing
 
 
+### JSON is cool, but I would like to aggregate everything in a CSV
+
+Of course! Have a look at [results_to_csv.py](https://github.com/packmad/Siggregator/blob/master/siggregator/results_to_csv.py), 
+it has been written in pure Python3 (i.e., no dependencies), you do not need Docker BUT be careful: 
+the script is mixing DIE with Yara, removing versions, etc. it is likely that you need to fix the code for your use case.
+
+Usage:
+```
+./results_to_csv.py input.json output.csv
+```
+
+Moreover, if a cell has multiple values, they are joined in alphabetical order using the semicolon as a separator, 
+for example: 
+```
+# cat example.csv
+SHA256,FILE_FORMAT,ARCH_BITS,ENDIANESS,COMPILER,LINKER,LIBRARY,PACKER/PROTECTOR,INSTALLER,SFX/ARCHIVE,OVERLAY,OTHER
+verylongsha256,pe,32,LE,aut2exe;msvc,microsoft linker,autoit,,,,,
+```
+It means that the detected compilers are `aut2exe` and `msvc`.
+
+
+
 ### Example with two files
 
 1. [37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7](https://www.virustotal.com/gui/file/37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7/detection)
 2. [d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f](https://www.virustotal.com/gui/file/d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f/detection)
 
 ```
-./siggregator.sh /tmp/twoviruses /tmp/out.json
+# ./siggregator.sh /tmp/twoviruses /tmp/twoviruses.json
 > Scanning input directory...
 > Found 2 files. Analysis in progress...
 100%|██████████| 2/2 [00:01<00:00, 32.76it/s]
@@ -60,7 +82,7 @@ and given the fact that Retdec's signatures are organized into fileformat/archit
 > "out.json" written. Bye!
 ```
 ```
-cat /tmp/out.json | jq
+# cat /tmp/out.json | jq
 [
    {
       "sha256":"37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7",
@@ -157,4 +179,15 @@ cat /tmp/out.json | jq
       ]
    }
 ]
+```
+
+```
+# ./results_to_csv.py /tmp/twoviruses.json /tmp/twoviruses.csv
+> Input json file contains 2 elements
+> "/tmp/twoviruses.csv" written. Bye!
+
+# cat /tmp/twoviruses.csv
+SHA256,FILE_FORMAT,ARCH_BITS,ENDIANESS,COMPILER,LINKER,LIBRARY,PACKER/PROTECTOR,INSTALLER,SFX/ARCHIVE,OVERLAY,OTHER
+37...a7,pe,32,LE,msvc,microsoft linker,,vmprotect,,,,
+d7...7f,pe,32,LE,msvc,microsoft linker,,,winrar sfx,rar,rar archive,
 ```

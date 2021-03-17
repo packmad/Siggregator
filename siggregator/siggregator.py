@@ -16,7 +16,7 @@ from tqdm import tqdm
 from typing import Optional, Dict, List
 
 
-sha256_regex = re.compile(r"^[a-f0-9]{64}$", re.IGNORECASE)
+sha256_regex = re.compile(r'^[a-f0-9]{64}$', re.IGNORECASE)
 yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
 yarac_signatures_dir = join(join(dirname(realpath(__file__)), 'yarac_signatures'))
 
@@ -77,7 +77,7 @@ def diec(file_path: str) -> Optional[Dict]:
                 del d['string']
                 new_d = dict()
                 for k, v in d.items():
-                    if v == "-":
+                    if v == '-':
                         new_d[k] = None
                     else:
                         new_d[k] = v

@@ -143,14 +143,17 @@ def aggregator(file_path: str) -> Optional[Dict]:
         out['sha256'] = bname
     else:
         out['sha256'] = get_file_sha256sum(file_path)
+    out["path"] = file_path
     return out
 
 
 def listdir_file_abspath(folder: str) -> List:
     assert isdir(folder)
-    return [abspath(join(folder, f)) for f in os.listdir(folder)
-            if not isdir(abspath(join(folder, f)))]
-
+    files_list = []
+    for root, _, files in os.walk(folder):
+        for file in files:
+            files_list.append(abspath(join(root, file)))
+    return files_list
 
 def run_parallel(tgt_folder: str) -> List[Dict]:
     print('> Scanning input directory...')

@@ -67,6 +67,8 @@ def pre_cleaner(field: str, name: str) -> Tuple[str, Optional[str]]:
 
 
 def diz_add_elems(diz: Dict[str, set], elems: List) -> None:
+    if elems is None:
+        return
     for e in elems:
         field, name = pre_cleaner(e['type'], e['name'])
         if name is None:

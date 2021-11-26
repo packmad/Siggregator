@@ -1,2 +1,6 @@
 python-magic==0.4.22
 tqdm==4.59.0
+pefile==2021.5.13
+pyimpfuzzy==0.5
+ssdeep==3.4
+py-tlsh==4.7.2

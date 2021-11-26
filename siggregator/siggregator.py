@@ -8,6 +8,10 @@ import re
 import subprocess
 import sys
 import yara
+import ordlookup
+import pefile
+import ssdeep
+import tlsh
 
 from multiprocessing import Pool
 from os.path import isdir, isfile, join, basename, abspath, dirname, realpath
@@ -63,9 +67,45 @@ def get_file_sha256sum(file_path: str) -> str:
             hash_function.update(chunk)
     return hash_function.hexdigest()
 
+def get_impfuzzy(pe: pefile.PE) -> str:
+        impstrs = []
+        exts = ["ocx", "sys", "dll"]
+        if not hasattr(pe, "DIRECTORY_ENTRY_IMPORT"):
+            return ""
+        for entry in pe.DIRECTORY_ENTRY_IMPORT:
+            if isinstance(entry.dll, bytes):
+                libname = entry.dll.decode().lower()
+            else:
+                libname = entry.dll.lower()
+            parts = libname.rsplit(".", 1)
+
+            if len(parts) > 1 and parts[1] in exts:
+                libname = parts[0]
+
+            for imp in entry.imports:
+                funcname = None
+                if not imp.name:
+                    funcname = ordlookup.ordLookup(
+                        entry.dll.lower(), imp.ordinal, make_name=True
+                    )
+                    if not funcname:
+                        raise pefile.PEFormatError(
+                            f"Unable to look up ordinal {entry.dll}:{imp.ordinal:04x}"
+                        )
+                else:
+                    funcname = imp.name
+
+                if not funcname:
+                    continue
+
+                if isinstance(funcname, bytes):
+                    funcname = funcname.decode()
+                impstrs.append("%s.%s" % (libname.lower(), funcname.lower()))
+
+        return ssdeep.hash(",".join(impstrs).encode())
 
 def diec(file_path: str) -> Optional[Dict]:
-    cmd = ['/die_lin64_portable/diec.sh', '--json', file_path]
+    cmd = ['diec', '--json', file_path]
     try:
         out = json.loads(
             subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
@@ -106,6 +146,19 @@ def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, st
         out.append(entry)
     return out
 
+def hashes(file_path: str) -> Optional[Dict]:
+    out = {}
+    with open(file_path, 'rb') as fp:
+        buff = fp.read() 
+        out['ssdeep'] = ssdeep.hash(buff)
+        out['tlsh'] = tlsh.hash(buff)
+    cmd = ['sdhash', file_path]
+    out['sdhash'] = subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore')
+    pe = pefile.PE(file_path)
+    out['imphash'] = pe.get_imphash()
+    out['impfuzzy'] = get_impfuzzy(pe)
+    
+    return out
 
 def aggregator(file_path: str) -> Optional[Dict]:
     if not is_supported_file(file_path):
@@ -138,6 +191,7 @@ def aggregator(file_path: str) -> Optional[Dict]:
     out['arch'] = arch
     out['die'] = diec(file_path)
     out['yara'] = yarac(file_path, fformat, arch)
+    out['hashes'] = hashes(file_path)
     bname = basename(file_path)
     if sha256_regex.match(bname):
         out['sha256'] = bname

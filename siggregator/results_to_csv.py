@@ -10,7 +10,7 @@ from os.path import isfile, basename
 from typing import Tuple, Optional, List, Dict
 
 FIELD_NAMES = ['SHA256', 'FILE_FORMAT', 'ARCH_BITS', 'ENDIANESS', 'COMPILER', 'LINKER', 'LIBRARY',
-               'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY', 'OTHER']
+               'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY', 'SSDEEP', 'SDHASH', 'TLSH', 'IMPHASH', 'IMPFUZZY', 'OTHER']
 
 AGGREGATOR_MAP = {
     'PROTECTOR': 'PACKER/PROTECTOR',
@@ -94,6 +94,13 @@ def main(in_file, out_file) -> None:
             yara = j['yara']
             if yara is not None:
                 diz_add_elems(diz_set, yara)
+            hashes = j['hashes']
+            if hashes is not None:
+                diz_set['SSDEEP'].add(j['hashes']['ssdeep'])
+                diz_set['TLSH'].add(j['hashes']['tlsh'])
+                diz_set['SDHASH'].add(j['hashes']['sdhash'])
+                diz_set['IMPHASH'].add(j['hashes']['imphash'])
+                diz_set['IMPFUZZY'].add(j['hashes']['impfuzzy'])
             diz_row: Dict[str, str] = dict()
             for k, v in diz_set.items():
                 if len(v) == 1:

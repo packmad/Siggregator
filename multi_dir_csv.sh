@@ -7,8 +7,8 @@ if [ "$#" -eq 2 ] && [[ -d $1 ]] && [[ -d $2 ]]; then
 		
 	for d in $IN_DIR/*/ ; do
 		OUT_FILE=$OUT_DIR/$(basename $d)
-		echo ./siggregator.sh $d $OUT_FILE.json
-		echo siggregator/results_to_csv.py $OUT_FILE.json $OUT_FILE.csv 
+		./siggregator.sh $d $OUT_FILE.json
+		siggregator/results_to_csv.py $OUT_FILE.json $OUT_FILE.csv 
 		printf "\n"
 	done
 

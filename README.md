@@ -60,7 +60,7 @@ In the same way, if you want to analyze a folder containing multiple directories
 ./multi_dir_csv.sh IN_DIR OUT_DIR
 ```
 
-This command will launch siggreagator in all the directories containted in IN\_DIR and will save the JSON files in OUT\_DIR with the format family\_name.json and then all those files will be converted in the csv format by using results\_to\_csv.py.
+This command will launch siggreagator in all the directories containted in IN\_DIR and will save the JSON files in OUT\_DIR with the format folder\_name.json and then all those files will be converted in the csv format by using results\_to\_csv.py.
 
 Moreover, if a cell has multiple values, they are joined in alphabetical order using the semicolon as a separator, 
 for example: 

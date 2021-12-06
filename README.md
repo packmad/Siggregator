@@ -55,6 +55,12 @@ Usage:
 ```
 ./results_to_csv.py input.json output.csv
 ```
+In the same way, if you want to analyze a folder containing multiple directories with binaries, you can use [multi_dir_csv.sh](https://github.com/packmad/Siggregator/blob/master/siggregator/multi_dir_csv.sh):
+```
+./multi_dir_csv.sh IN_DIR OUT_DIR
+```
+
+This command will launch siggreagator in all the directories containted in IN\_DIR and will save the JSON files in OUT\_DIR with the format family\_name.json and then all those files will be converted in the csv format by using results\_to\_csv.py.
 
 Moreover, if a cell has multiple values, they are joined in alphabetical order using the semicolon as a separator, 
 for example: 

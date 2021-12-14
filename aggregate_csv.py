@@ -22,7 +22,6 @@ def main(in_dir: str, out_file: str) -> None:
             print(f'> Aggregating {filename}...')
             with open(filepath, 'r') as f:
                 csv_reader = csv.DictReader(f)
-                next(csv_reader, None)
                 for row in csv_reader:
                     row['FAMILY'] = os.path.splitext(filename)[0]
                     csv_writer.writerow(row)

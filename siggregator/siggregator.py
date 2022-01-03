@@ -171,7 +171,7 @@ def aggregator(file_path: str) -> Optional[Dict]:
         fformat = 'pe'
         if magic_sig[4] == '+':
             arch = 'x64'
-        elif '80386' in magic_sig:
+        else:  # if '80386' in magic_sig:
             arch = 'x86'
     elif magic_sig.startswith('ELF'):
         fformat = 'elf'

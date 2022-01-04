@@ -185,6 +185,17 @@ def aggregator(file_path: str) -> Optional[Dict]:
             arch = 'x64'
         elif '32-bit' in magic_sig:
             arch = 'x86'
+    else:
+        try:
+            pe = pefile.PE(file_path, fast_load=True)
+            fformat = 'pe'
+            machine = pe.FILE_HEADER.Machine
+            if machine == 0x14c:
+                arch = 'x86'
+            elif machine & 0x00ff == 0x64:
+                arch = 'x64'
+        except:
+            pass
     if fformat is None or arch is None:
         return None
     out['format'] = fformat

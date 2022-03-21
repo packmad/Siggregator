@@ -9,7 +9,7 @@ from collections import defaultdict
 from os.path import isfile, basename
 from typing import Tuple, Optional, List, Dict
 
-FIELD_NAMES = ['SHA256', 'FILE_FORMAT', 'ARCH_BITS', 'ENDIANESS', 'COMPILER', 'LINKER', 'LIBRARY',
+FIELD_NAMES = ['SHA256', 'FILE_FORMAT', 'ARCH', 'LINKER', 'LIBRARY', 'COMPILER',
                'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY', 'SSDEEP', 'SDHASH', 'TLSH', 'IMPHASH', 'IMPFUZZY', 'OTHER']
 
 AGGREGATOR_MAP = {
@@ -85,16 +85,12 @@ def generate_csv(in_file, out_file) -> None:
         csv_writer.writeheader()
         for j in json_data:
             diz_set = defaultdict(set)
-            if 'die' not in j: continue  # TODO backward compatibility, will be removed
             diz_set['SHA256'].add(j['sha256'])
             diz_set['FILE_FORMAT'].add(j['format'])
-            diz_set['ARCH_BITS'].add(j['die']['mode'])
-            diz_set['ENDIANESS'].add(j['die']['endianess'])
-            diz_add_elems(diz_set, j['die']['detects'])
-            yara = j['yara']
-            if yara is not None:
-                diz_add_elems(diz_set, yara)
-            hashes = j['hashes']
+            diz_set['ARCH'].add(j['arch'])
+            diz_add_elems(diz_set, j['die']['values'])
+            diz_add_elems(diz_set, j['yara'])
+            hashes = j.get('hashes')
             if hashes is not None:
                 diz_set['SSDEEP'].add(j['hashes']['ssdeep'])
                 diz_set['TLSH'].add(j['hashes']['tlsh'])

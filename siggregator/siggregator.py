@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import hashlib
 import json
 import magic
@@ -25,6 +26,11 @@ from results_to_csv import generate_csv
 sha256_regex = re.compile(r'^[a-f0-9]{64}$', re.IGNORECASE)
 yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
 yarac_signatures_dir = join(join(dirname(realpath(__file__)), 'yarac_signatures'))
+GEN_SIM_HASHES = False  # similarity hashes generation?
+
+
+def subprocess_check_output_strip(cmd: List):
+    return subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore')
 
 
 def compile_signatures() -> int:
@@ -109,25 +115,28 @@ def get_impfuzzy(pe: pefile.PE) -> str:
 
 
 def diec(file_path: str) -> Optional[Dict]:
-    cmd = ['diec', '--json', file_path]
     try:
-        out = json.loads(
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore'))
-        if len(out['detects']) == 0:
-            out['detects'] = None
-        else:
-            new_detects = list()
-            for d in out['detects']:
-                del d['string']
+        die: Dict = json.loads(subprocess_check_output_strip(['diec', '--json', file_path]))
+        if 'detects' not in die:
+            return None
+        assert len(die['detects']) == 1
+        detect = die['detects'][0]
+        if 'values' in detect:
+            new_values = list()
+            for d in detect['values']:
+                if 'string' in d:
+                    del d['string']
                 new_d = dict()
                 for k, v in d.items():
                     if v == '-':
                         new_d[k] = None
                     else:
                         new_d[k] = v
-                new_detects.append(new_d)
-            out['detects'] = new_detects
-        return out
+                new_values.append(new_d)
+        else:
+            new_values = None
+        detect['values'] = new_values
+        return detect
     except (subprocess.CalledProcessError, ValueError) as e:
         sys.exit(f"Exception: {e.output.decode(errors='replace') if e.output else e}")
 
@@ -151,14 +160,13 @@ def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, st
     return out
 
 
-def hashes(file_path: str) -> Optional[Dict]:
+def sim_hashes(file_path: str) -> Optional[Dict]:
     out = {}
     with open(file_path, 'rb') as fp:
         buff = fp.read() 
         out['ssdeep'] = ssdeep.hash(buff)
         out['tlsh'] = tlsh.hash(buff)
-    cmd = ['sdhash', file_path]
-    out['sdhash'] = subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode(errors='ignore')
+    out['sdhash'] = subprocess.check_output(subprocess_check_output_strip(['sdhash', file_path]))
     pe = pefile.PE(file_path)
     out['imphash'] = pe.get_imphash()
     out['impfuzzy'] = get_impfuzzy(pe)
@@ -207,7 +215,8 @@ def aggregator(file_path: str) -> Optional[Dict]:
     out['arch'] = arch
     out['die'] = diec(file_path)
     out['yara'] = yarac(file_path, fformat, arch)
-    out['hashes'] = hashes(file_path)
+    if GEN_SIM_HASHES:
+        out['hashes'] = sim_hashes(file_path)
     bname = basename(file_path)
     if sha256_regex.match(bname):
         out['sha256'] = bname
@@ -239,14 +248,20 @@ if __name__ == "__main__":
         nof_sigs = compile_signatures()
         print(f'> {nof_sigs} rules compiled')
 
-    if len(sys.argv) != 3:
-        sys.exit(f'Usage: {basename(__file__)} IN_DIR OUT_FILE')
-    tgt_dir = sys.argv[1]
+    parser = argparse.ArgumentParser(
+        description='PyPEfilter filters out non-native Portable Executable files')
+    parser.add_argument('--hashes', help='Generates hashes', action='store_true')
+    parser.add_argument('--csv', help='Generate CSV with aggregate results', action='store_true')
+    parser.add_argument('-d', '--dir', type=str, help='Target directory', required=True)
+    parser.add_argument('-o', '--out', type=str, help='Output JSON file', required=True)
+    args = parser.parse_args()
+
+    tgt_dir = args.dir
     assert isdir(tgt_dir)
-    tgt_file = sys.argv[2]
+    tgt_file = args.out
     if isfile(tgt_file):
         os.remove(tgt_file)
-
+    GEN_SIM_HASHES = args.hashes
     results = run_parallel(tgt_dir)
     print(f'> Found {len(results)} executable files. Writing JSON file...')
 
@@ -254,9 +269,10 @@ if __name__ == "__main__":
         json.dump(results, fp)
     print(f'> "{basename(tgt_file)}" written. Generating CSV...')
 
-    if tgt_file.endswith('.json'):
-        tgt_csv = f'{tgt_file[:-5]}.csv'
-    else:
-        tgt_csv = f'{tgt_file}.csv'
-    generate_csv(tgt_file, tgt_csv)
-    print(f'> "{basename(tgt_csv)}" written. Bye :)')
+    if args.csv:
+        if tgt_file.endswith('.json'):
+            tgt_csv = f'{tgt_file[:-5]}.csv'
+        else:
+            tgt_csv = f'{tgt_file}.csv'
+        generate_csv(tgt_file, tgt_csv)
+        print(f'> "{basename(tgt_csv)}" written. Bye :)')

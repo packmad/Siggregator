@@ -19,6 +19,8 @@ from pathlib import Path
 from tqdm import tqdm
 from typing import Optional, Dict, List
 
+from results_to_csv import generate_csv
+
 
 sha256_regex = re.compile(r'^[a-f0-9]{64}$', re.IGNORECASE)
 yara_signatures_dir = join(join(dirname(realpath(__file__)), 'yara_signatures'))
@@ -67,6 +69,7 @@ def get_file_sha256sum(file_path: str) -> str:
             hash_function.update(chunk)
     return hash_function.hexdigest()
 
+
 def get_impfuzzy(pe: pefile.PE) -> str:
         impstrs = []
         exts = ["ocx", "sys", "dll"]
@@ -103,6 +106,7 @@ def get_impfuzzy(pe: pefile.PE) -> str:
                 impstrs.append("%s.%s" % (libname.lower(), funcname.lower()))
 
         return ssdeep.hash(",".join(impstrs).encode())
+
 
 def diec(file_path: str) -> Optional[Dict]:
     cmd = ['diec', '--json', file_path]
@@ -146,6 +150,7 @@ def yarac(file_path: str, fformat: str, arch: str) -> Optional[List[Dict[str, st
         out.append(entry)
     return out
 
+
 def hashes(file_path: str) -> Optional[Dict]:
     out = {}
     with open(file_path, 'rb') as fp:
@@ -157,8 +162,8 @@ def hashes(file_path: str) -> Optional[Dict]:
     pe = pefile.PE(file_path)
     out['imphash'] = pe.get_imphash()
     out['impfuzzy'] = get_impfuzzy(pe)
-    
     return out
+
 
 def aggregator(file_path: str) -> Optional[Dict]:
     if not is_supported_file(file_path):
@@ -211,15 +216,14 @@ def aggregator(file_path: str) -> Optional[Dict]:
     return out
 
 
-def listdir_file_abspath(folder: str) -> List:
+def recursive_files_listing(folder: str) -> List:
     assert isdir(folder)
-    return [abspath(join(folder, f)) for f in os.listdir(folder)
-            if not isdir(abspath(join(folder, f)))]
+    return [join(root, f) for root, _, files in os.walk(folder, topdown=False) for f in files]
 
 
 def run_parallel(tgt_folder: str) -> List[Dict]:
-    print('> Scanning input directory...')
-    files = listdir_file_abspath(tgt_folder)
+    print('> Recursively scanning input directory...')
+    files = recursive_files_listing(tgt_folder)
     print(f'> Found {len(files)} files. Analysis in progress...')
     with Pool() as pool:
         outputs = list(tqdm(pool.imap(aggregator, files), total=len(files)))
@@ -244,8 +248,15 @@ if __name__ == "__main__":
         os.remove(tgt_file)
 
     results = run_parallel(tgt_dir)
-    print(f'> Found {len(results)} executable files. Writing output file...')
+    print(f'> Found {len(results)} executable files. Writing JSON file...')
 
     with open(tgt_file, 'w') as fp:
         json.dump(results, fp)
-    print(f'> "{basename(tgt_file)}" written. Bye!')
+    print(f'> "{basename(tgt_file)}" written. Generating CSV...')
+
+    if tgt_file.endswith('.json'):
+        tgt_csv = f'{tgt_file[:-5]}.csv'
+    else:
+        tgt_csv = f'{tgt_file}.csv'
+    generate_csv(tgt_file, tgt_csv)
+    print(f'> "{basename(tgt_csv)}" written. Bye :)')

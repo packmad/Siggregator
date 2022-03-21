@@ -76,7 +76,7 @@ def diz_add_elems(diz: Dict[str, set], elems: List) -> None:
         diz[field].add(name)
 
 
-def main(in_file, out_file) -> None:
+def generate_csv(in_file, out_file) -> None:
     json_data = json.load(open(in_file, encoding='utf8', errors='ignore'))
     print(f'> Input json file contains {len(json_data)} elements')
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     if isfile(out_file):
         os.remove(out_file)
 
-    main(in_file, out_file)
+    generate_csv(in_file, out_file)
 
     '''
     import pandas as pd

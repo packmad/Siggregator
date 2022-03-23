@@ -166,7 +166,7 @@ def sim_hashes(file_path: str) -> Optional[Dict]:
         buff = fp.read() 
         out['ssdeep'] = ssdeep.hash(buff)
         out['tlsh'] = tlsh.hash(buff)
-    out['sdhash'] = subprocess.check_output(subprocess_check_output_strip(['sdhash', file_path]))
+    out['sdhash'] = subprocess_check_output_strip(['sdhash', file_path])
     pe = pefile.PE(file_path)
     out['imphash'] = pe.get_imphash()
     out['impfuzzy'] = get_impfuzzy(pe)

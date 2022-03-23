@@ -250,7 +250,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description='PyPEfilter filters out non-native Portable Executable files')
-    parser.add_argument('--hashes', help='Generates hashes', action='store_true')
+    parser.add_argument('--hashes', help='Generates similarity hashes', action='store_true')
     parser.add_argument('--csv', help='Generate CSV with aggregate results', action='store_true')
     parser.add_argument('-d', '--dir', type=str, help='Target directory', required=True)
     parser.add_argument('-o', '--out', type=str, help='Output JSON file', required=True)
@@ -274,5 +274,8 @@ if __name__ == "__main__":
             tgt_csv = f'{tgt_file[:-5]}.csv'
         else:
             tgt_csv = f'{tgt_file}.csv'
-        generate_csv(tgt_file, tgt_csv)
-        print(f'> "{basename(tgt_csv)}" written. Bye :)')
+        if isfile(tgt_csv):
+            sys.exit()
+        else:
+            generate_csv(tgt_file, tgt_csv)
+            print(f'> "{basename(tgt_csv)}" written. Bye :)')

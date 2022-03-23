@@ -116,9 +116,10 @@ if __name__ == "__main__":
     assert isfile(in_file)
     out_file = sys.argv[2]
     if isfile(out_file):
-        os.remove(out_file)
-
-    generate_csv(in_file, out_file)
+        #os.remove(out_file)
+        sys.exit()
+    else:
+        generate_csv(in_file, out_file)
 
     '''
     import pandas as pd

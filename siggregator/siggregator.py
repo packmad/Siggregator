@@ -234,10 +234,14 @@ def run_parallel(tgt_folder: str) -> List[Dict]:
     print('> Recursively scanning input directory...')
     files = recursive_files_listing(tgt_folder)
     print(f'> Found {len(files)} files. Analysis in progress...')
-    with Pool() as pool:
-        outputs = list(tqdm(pool.imap(aggregator, files), total=len(files)))
-        print('> Analysis done!')
-        return list(filter(None, outputs))
+    outputs = None
+    if True:  # parallel
+        with Pool() as pool:
+            outputs = list(tqdm(pool.imap(aggregator, files), total=len(files)))
+    else:  # sequential -- debug
+        outputs = [aggregator(f) for f in files]
+    print(f'> Analyzed {len(outputs)} files')
+    return list(filter(None, outputs))
 
 
 if __name__ == "__main__":
@@ -263,8 +267,7 @@ if __name__ == "__main__":
         os.remove(tgt_file)
     GEN_SIM_HASHES = args.hashes
     results = run_parallel(tgt_dir)
-    print(f'> Found {len(results)} executable files. Writing JSON file...')
-
+    print(f'> Found {len(results)} valid files. Writing JSON file...')
     with open(tgt_file, 'w') as fp:
         json.dump(results, fp)
     print(f'> "{basename(tgt_file)}" written. Generating CSV...')

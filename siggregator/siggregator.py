@@ -274,7 +274,6 @@ if __name__ == "__main__":
         print(f'> "{basename(tgt_file)}" written!')
     if args.csv:
         print('> Generating CSV...')
-
         if tgt_file.endswith('.json'):
             tgt_csv = f'{tgt_file[:-5]}.csv'
         else:

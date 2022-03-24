@@ -30,6 +30,6 @@ COPY siggregator/ siggregator/
 WORKDIR siggregator
 
 # generate signatures
-RUN python3.9 main.py 2>/dev/null; exit 0
+RUN python3.9 siggregator.py 2>/dev/null; exit 0
 
 ENTRYPOINT ["python3.9", "siggregator.py"]

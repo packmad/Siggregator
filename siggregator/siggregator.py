@@ -264,21 +264,23 @@ if __name__ == "__main__":
     assert isdir(tgt_dir)
     tgt_file = args.out
     if isfile(tgt_file):
-        os.remove(tgt_file)
-    GEN_SIM_HASHES = args.hashes
-    results = run_parallel(tgt_dir)
-    print(f'> Found {len(results)} valid files. Writing JSON file...')
-    with open(tgt_file, 'w') as fp:
-        json.dump(results, fp)
-    print(f'> "{basename(tgt_file)}" written. Generating CSV...')
-
+        print(f'> File {tgt_file} already exists. Skipping JSON generation.')
+    else:
+        GEN_SIM_HASHES = args.hashes
+        results = run_parallel(tgt_dir)
+        print(f'> Found {len(results)} valid files. Writing JSON file...')
+        with open(tgt_file, 'w') as fp:
+            json.dump(results, fp)
+        print(f'> "{basename(tgt_file)}" written!')
     if args.csv:
+        print('> Generating CSV...')
+
         if tgt_file.endswith('.json'):
             tgt_csv = f'{tgt_file[:-5]}.csv'
         else:
             tgt_csv = f'{tgt_file}.csv'
         if isfile(tgt_csv):
-            sys.exit()
+            print(f'> File {tgt_csv} already exists. Skipping CSV generation...')
         else:
             generate_csv(tgt_file, tgt_csv)
             print(f'> "{basename(tgt_csv)}" written. Bye :)')

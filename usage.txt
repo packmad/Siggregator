@@ -1,0 +1,5 @@
+- check that the dataset is mounted:
+
+sudo sshfs -o allow_other,IdentityFile=/home/nino/.ssh/id_rsa nortonguy@10.9.19.145:/home/nortonguy/datasets/malware /mnt/dataset
+
+./multi_dir_csv.sh /mnt/dataset /home/nino/original/Siggregator/results 

@@ -6,7 +6,7 @@ import csv
 
 from os.path import isfile, isdir, basename, join
 
-FIELD_NAMES = ['SHA256', 'FAMILY', 'FILE_FORMAT', 'ARCH_BITS', 'ENDIANESS', 'COMPILER', 'LINKER', 'LIBRARY',
+FIELD_NAMES = ['SHA256', 'FAMILY', 'FILE_FORMAT', 'ARCH', 'ENDIANESS', 'COMPILER', 'LINKER', 'LIBRARY',
                'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY', 'SSDEEP', 'SDHASH', 'TLSH', 'IMPHASH', 'IMPFUZZY', 'OTHER']
 
 def main(in_dir: str, out_file: str) -> None:

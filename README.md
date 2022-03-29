@@ -22,7 +22,7 @@ Moreover, they use different technologies, which are sometimes tedious to config
 Siggregator was born to be used as a [Docker](https://www.docker.com/) container à la build&run plug&play minimum-effort&maximum-result, 
 to compare the output of the tools mentioned above.
 
-```
+```bash
 git clone https://github.com/packmad/Siggregator.git
 cd Siggregator
 docker build . -t packmad:siggregator
@@ -52,11 +52,11 @@ it has been written in pure Python3 (i.e., no dependencies), you do not need Doc
 the script is mixing DIE with Yara, removing versions, etc. it is likely that you need to fix the code for your use case.
 
 Usage:
-```
+```bash
 ./results_to_csv.py input.json output.csv
 ```
 In the same way, if you want to analyze a folder containing multiple directories with binaries, you can use [multi_dir_csv.sh](https://github.com/packmad/Siggregator/blob/master/siggregator/multi_dir_csv.sh):
-```
+```bash
 ./multi_dir_csv.sh IN_DIR OUT_DIR
 ```
 
@@ -64,7 +64,7 @@ This command will launch siggreagator in all the directories containted in IN\_D
 
 Moreover, if a cell has multiple values, they are joined in alphabetical order using the semicolon as a separator, 
 for example: 
-```
+```bash
 # cat example.csv
 SHA256,FILE_FORMAT,ARCH_BITS,ENDIANESS,COMPILER,LINKER,LIBRARY,PACKER/PROTECTOR,INSTALLER,SFX/ARCHIVE,OVERLAY,OTHER
 verylongsha256,pe,32,LE,aut2exe;msvc,microsoft linker,autoit,,,,,
@@ -78,7 +78,7 @@ It means that the detected compilers are `aut2exe` and `msvc`.
 1. [37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7](https://www.virustotal.com/gui/file/37bea5b0a24fa6fed0b1649189a998a0e51650dd640531fe78b6db6a196917a7/detection)
 2. [d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f](https://www.virustotal.com/gui/file/d7e1d13cab1bd8be1f00afbec993176cc116c2b233209ea6bd33e6a9b1ec7a7f/detection)
 
-```
+```bash
 # ./siggregator.sh /tmp/twoviruses /tmp/twoviruses.json
 > Scanning input directory...
 > Found 2 files. Analysis in progress...
@@ -87,7 +87,7 @@ It means that the detected compilers are `aut2exe` and `msvc`.
 > Found 2 executable files. Writing output file...
 > "out.json" written. Bye!
 ```
-```
+```bash
 # cat /tmp/out.json | jq
 [
    {
@@ -187,7 +187,7 @@ It means that the detected compilers are `aut2exe` and `msvc`.
 ]
 ```
 
-```
+```bash
 # ./results_to_csv.py /tmp/twoviruses.json /tmp/twoviruses.csv
 > Input json file contains 2 elements
 > "/tmp/twoviruses.csv" written. Bye!

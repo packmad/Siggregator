@@ -10,10 +10,12 @@ from os.path import isfile, basename
 from typing import Tuple, Optional, List, Dict
 
 FIELD_NAMES = ['SHA256', 'FILE_FORMAT', 'ARCH', 'LINKER', 'LIBRARY', 'COMPILER',
-               'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY', 'SSDEEP', 'SDHASH', 'TLSH', 'IMPHASH', 'IMPFUZZY', 'OTHER']
+               'PACKER/PROTECTOR', 'INSTALLER', 'SFX/ARCHIVE', 'OVERLAY',
+               'SSDEEP', 'SDHASH', 'TLSH', 'IMPHASH', 'IMPFUZZY', 'OTHER']
 
 AGGREGATOR_MAP = {
     'PROTECTOR': 'PACKER/PROTECTOR',
+    'PROTECTION': 'PACKER/PROTECTOR',
     'PACKER': 'PACKER/PROTECTOR',
     'SFX': 'SFX/ARCHIVE',
     'ARCHIVE': 'SFX/ARCHIVE',
@@ -116,6 +118,7 @@ if __name__ == "__main__":
     assert isfile(in_file)
     out_file = sys.argv[2]
     if isfile(out_file):
+        print(f'> Output file {out_file} already exists')
         #os.remove(out_file)
         sys.exit()
     else:

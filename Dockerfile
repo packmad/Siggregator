@@ -20,8 +20,9 @@ RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v2.5.0/pr
     git clone https://github.com/sdhash/sdhash.git && cd sdhash && make && make install && cd .. && rm -rf sdhash/
 
 # die
-RUN wget https://github.com/horsicq/DIE-engine/releases/download/3.04/die_3.04_Ubuntu_20.04_amd64.deb && \
-    dpkg -i die_3.04_Ubuntu_20.04_amd64.deb && rm die_3.04_Ubuntu_20.04_amd64.deb
+ENV DIE_VER 3.06
+RUN wget https://github.com/horsicq/DIE-engine/releases/download/${DIE_VER}/die_${DIE_VER}_Ubuntu_20.04_amd64.deb && \
+    dpkg -i die_${DIE_VER}_Ubuntu_20.04_amd64.deb && rm die_${DIE_VER}_Ubuntu_20.04_amd64.deb
 
 COPY requirements.txt .
 RUN python3.9 -m pip install --no-cache-dir -r /requirements.txt
